@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const { randomBytes } = require('crypto');
-const { CATEGORY_KEYS, DEPARTMENT_KEYS, STATUS_KEYS } = require('../utils/constants');
+const { STATUS_KEYS } = require('../utils/constants');
 
 const remarkSchema = new mongoose.Schema({
   message: { type: String, required: true, maxlength: 2000 },
@@ -22,11 +22,15 @@ const complaintSchema = new mongoose.Schema({
   student: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   title: { type: String, required: true, trim: true, maxlength: 150 },
   description: { type: String, required: true, trim: true, maxlength: 5000 },
-  category: { type: String, required: true, enum: CATEGORY_KEYS },
-  department: { type: String, required: true, enum: DEPARTMENT_KEYS, index: true },
+  category: { type: String, required: true, trim: true },
+  department: { type: String, required: true, trim: true, index: true },
   location: { type: String, trim: true, maxlength: 150, default: '' },
   priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
-  imageUrl: { type: String, trim: true, maxlength: 1000, default: '' },
+  imageUrl: { type: String, trim: true, maxlength: 1000, default: '' }, // Older complaints remain compatible.
+  hasEvidence: { type: Boolean, default: false },
+  confidential: { type: Boolean, default: false, index: true },
+  priorityReason: { type: String, default: '' },
+  prioritySource: { type: String, enum: ['auto', 'admin'], default: 'auto' },
   status: { type: String, enum: STATUS_KEYS, default: 'pending', index: true },
   remarks: { type: [remarkSchema], default: [] },
   history: { type: [historySchema], default: [] },

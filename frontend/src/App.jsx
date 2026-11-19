@@ -7,6 +7,7 @@ import ComplaintList from './pages/ComplaintList.jsx';
 import NewComplaint from './pages/NewComplaint.jsx';
 import ComplaintDetails from './pages/ComplaintDetails.jsx';
 import Analytics from './pages/Analytics.jsx';
+import AdminManagement from './pages/AdminManagement.jsx';
 
 function ProtectedArea() {
   const { user, loading } = useAuth();
@@ -18,6 +19,11 @@ function ProtectedArea() {
 function StudentOnly({ children }) {
   const { user } = useAuth();
   return user?.role === 'student' ? children : <Navigate to="/dashboard" replace />;
+}
+
+function SuperAdminOnly({ children }) {
+  const { user } = useAuth();
+  return user?.role === 'super_admin' ? children : <Navigate to="/dashboard" replace />;
 }
 
 function AdminOnly({ children }) {
@@ -35,6 +41,7 @@ export default function App() {
         <Route path="/complaints/new" element={<StudentOnly><NewComplaint /></StudentOnly>} />
         <Route path="/complaints/:id" element={<ComplaintDetails />} />
         <Route path="/analytics" element={<AdminOnly><Analytics /></AdminOnly>} />
+        <Route path="/admin/manage" element={<SuperAdminOnly><AdminManagement /></SuperAdminOnly>} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

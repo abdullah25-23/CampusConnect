@@ -1,96 +1,67 @@
-# CampusConnect Backend (Node.js + Express + MongoDB Atlas)
+# CampusConnect Backend v1.2
 
-## Quick start (inside `backend`)
+A non-destructive update to the competition backend. Preserve your existing `.env` file and MongoDB Atlas database.
 
-1. Copy these files into your existing `backend` folder, **keep your working `.env` unchanged** and do not publish it.
-2. Add to your existing `backend/.env`:
-   - `JWT_SECRET=` followed by a random string of 32+ characters (PowerShell: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`)
-   - `SEED_ADMIN_PASSWORD=` followed by a strong temporary demonstration password (10+ characters).
-3. `npm install`
-4. `npm run seed` (once to create five admin users)
-5. `npm run dev`
-6. Test `http://localhost:5000/api/health`.
+## Setup
 
-Never commit `.env`; on Render, set `MONGO_URI`, `JWT_SECRET`, and `FRONTEND_URL` in environment variables. `SEED_ADMIN_PASSWORD` is only needed to run the seed script, not to run the server. When running seed with Atlas, ensure your current IP has network access. Rendering to the public internet may require appropriate Atlas network access.
+```powershell
+cd backend
+npm install
+npm run check
+npm run dev
+```
 
-## Demo admin logins
+Do **not** run `npm run seed` after this upgrade unless you specifically want to ensure the demo accounts exist. The existing accounts and complaints are kept unchanged.
 
-Run `npm run seed` to create these accounts (all use the password from `SEED_ADMIN_PASSWORD`):
+The normal startup automatically creates the four **default department and category records** if they are missing. MongoDB collections are created on first write. Existing complaints, users, and seed accounts are preserved.
 
-- `superadmin@campusconnect.local`
-- `cafeteria@campusconnect.local`
-- `library@campusconnect.local`
-- `it@campusconnect.local`
-- `academic@campusconnect.local`
+## APIs
 
-`seed` does not overwrite existing passwords. To change the demo password after seeding, adjust the database entry or delete those five demo users and seed again. Avoid real accounts with the reserved demo email addresses.
+### Public
 
-## API contract (frontend can integrate these)
-
-All JSON requests with a body require `Content-Type: application/json`. Authenticated endpoints require `Authorization: Bearer <token>`.
+- `GET /api/health`
+- `GET /api/meta/categories` — active categories and their departments
+- `GET /api/meta/departments` — active departments
 
 ### Authentication
 
-- `POST /api/auth/register` → `{ "name": "Ali", "email": "ali@example.com", "password": "securepass123" }` → `{ token, user }`. Registers **students only**.
-- `POST /api/auth/login` → `{ "email": "ali@example.com", "password": "securepass123" }` → `{ token, user }`.
-- `GET /api/auth/me` → `{ user }`.
+- `POST /api/auth/register` — students only
+- `POST /api/auth/login`
+- `GET /api/auth/me`
 
-### Complaints
+### Complaints (Bearer token required)
 
-- `GET /api/meta/categories` → list of categories and their departments.
-- `GET /api/meta/statuses` → statuses.
-- `POST /api/complaints` (student) → `{ "title": "WiFi unavailable", "description": "Lab 2 WiFi has not been working since morning", "category": "it", "location": "Lab 2", "priority": "high" }`. Server determines department. Optional: `imageUrl` (external http/https URL, not a file upload).
-- `GET /api/complaints` → `{ complaints, pagination }`. Scope enforced on server. Optional query: `status`, `category`, `search`, `page`, `limit`; `department` filter is reserved for Super Admin.
-- `GET /api/complaints/:id` → `{ complaint }` with status history and remarks, only if authorized.
-- `PATCH /api/complaints/:id/status` (dept admin/super admin) → `{ "status": "in_progress", "note": "Technician notified" }`. Options: `pending`, `in_progress`, `resolved`, `rejected`. Rejection requires a note.
-- `POST /api/complaints/:id/remarks` (dept admin/super admin) → `{ "message": "Issue will be checked today" }`.
+- `POST /api/complaints` — student only. `multipart/form-data`: `title`, `description`, `category`, optional `location`, `confidential` (`true`/`false`), optional `image` (JPG/PNG, max 5 MB). Existing JSON requests remain supported.
+- `GET /api/complaints` — role-scoped records; optional status/category/priority filters, super-admin-only department filter
+- `GET /api/complaints/:id`
+- `GET /api/complaints/:id/evidence` — sends protected image bytes. Requires an Authorization header.
+- `PATCH /api/complaints/:id/status` — staff; `{ "status": "in_progress", "note": "Reviewing" }`
+- `PATCH /api/complaints/:id/priority` — staff; `{ "priority": "high", "note": "Urgent" }`
+- `POST /api/complaints/:id/remarks` — staff
+
+### Super Admin only
+
+- `GET/POST /api/admin/departments`
+- `PATCH /api/admin/departments/:id` — rename or activate/deactivate
+- `GET/POST /api/admin/categories`
+- `PATCH /api/admin/categories/:id` — rename, change routing of future complaints, activate/deactivate
+- `GET/POST /api/admin/department-admins` — create staff accounts with initial passwords
+- `PATCH /api/admin/department-admins/:id` — name, department, active status
+- `POST /api/admin/department-admins/:id/reset-password`
 
 ### Analytics
 
-- `GET /api/dashboard/stats` → `{ total, byStatus, byDepartment, byCategory, resolutionRate, recent }`; role-scoped: students see only their submissions, departmental admins only their department, super admins everything.
+- `GET /api/dashboard/stats` — role-scoped status, department/category/priority breakdown, last-7-day trend, average resolution time, 7-day backlog, top complaint locations.
 
-## Example login response
+## Security and data
 
-```json
-{
-  "message": "Login successful",
-  "token": "<JWT_TOKEN>",
-  "user": {
-    "id": "...",
-    "name": "Ali",
-    "email": "ali@example.com",
-    "role": "student",
-    "department": null
-  }
-}
-```
-
-## Permissions
-
-- Students can create complaints, list/view only their own, and see remarks/history.
-- Department admins can list/view/reply/update only their own department's complaints.
-- Super admin can list/view/reply/update complaints across all departments.
-- Admin privileges are never accepted from student registration input.
-- Complaint routing uses server-side category mapping; submitted `department` is ignored.
+- Department admins can view **only their assigned department**; students can view **only their own complaints**. This is server-side, including uploaded image URLs.
+- In confidential complaints, the departmental API omits the student's ID and email and redacts their name from the complaint history. The student and Super Admin retain full access.
+- Students should avoid names or faces in complaint text/images if they want confidentiality; there is no automatic image redaction.
+- Images are stored as separate binary documents in MongoDB Atlas, **not** in the Render local filesystem. Free-tier storage is limited; consider external object storage and rate limits for a larger rollout.
+- Automatic priority classification is a simple, explainable keyword heuristic, not AI or emergency-response triage. Admins can override it.
+- Keep `backend/.env` out of Git. Back up Atlas data prior to production migrations.
 
 ## Deployment
 
-Deploy on Render as a Web Service:
-- Root directory: `backend` (when repository includes `frontend/` + `backend/`)
-- Build: `npm install`
-- Start: `npm start`
-- Env: `MONGO_URI`, `JWT_SECRET`, `FRONTEND_URL` (frontend Vercel origin), optional `PORT` (Render sets this)
-
-Backend URL for React: `VITE_API_URL=https://YOUR-RENDER-SERVICE.onrender.com`. Keep all secrets on server, never in React/Vite environment variables.
-
-## Additional features already included
-
-- Human-readable tracking ticket IDs (`CC-...`)
-- Status timeline/history with who changed the status
-- Administrator remarks
-- Priority labels and location fields
-- Per-department and per-category analytics, status totals and resolution rate
-- Search, filters and pagination
-- Database indexes for faster common queries
-
-**Note:** An image URL can be stored but file uploads/storage are not included. Avoid promising image upload functionality until a storage provider is configured. Test all flows before demo. 
+Your existing Render service works with `Root Directory=backend`, `Build Command=npm install`, `Start Command=npm start`. Keep `MONGO_URI`, `JWT_SECRET`, `FRONTEND_URL` configured as before. Redeploy the service after pushing the upgrade. No Cloudinary account or credentials are required.

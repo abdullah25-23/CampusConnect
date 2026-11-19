@@ -10,7 +10,8 @@ const userSchema = new mongoose.Schema({
     default: 'student',
     required: true,
   },
-  department: { type: String, enum: ['cafeteria', 'library', 'it', 'academic', null], default: null },
+  department: { type: String, trim: true, default: null },
+  active: { type: Boolean, default: true },
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

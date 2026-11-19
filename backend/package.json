@@ -1,8 +1,8 @@
 {
   "name": "campusconnect-backend",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
-  "description": "CampusConnect competition REST API: auth, complaints, routing, role permissions and analytics",
+  "description": "CampusConnect API with dynamic departments, secure evidence, confidential complaints and advanced reporting",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -10,14 +10,19 @@
     "seed": "node scripts/seedAdmins.js",
     "check": "node scripts/check.js"
   },
-  "engines": { "node": ">=20.19.0" },
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.18.0"
+    "mongoose": "^8.18.0",
+    "multer": "^2.5.0"
   },
-  "devDependencies": { "nodemon": "^3.1.10" }
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
 }

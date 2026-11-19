@@ -11,7 +11,7 @@ async function requireAuth(req, res, next) {
     try { payload = jwt.verify(token, process.env.JWT_SECRET); }
     catch { return fail(401, 'Invalid or expired token'); }
     const user = await User.findById(payload.userId);
-    if (!user) return fail(401, 'Account no longer exists');
+    if (!user || user.active === false) return fail(401, 'Account is unavailable');
     req.user = user;
     next();
   } catch (error) { next(error); }

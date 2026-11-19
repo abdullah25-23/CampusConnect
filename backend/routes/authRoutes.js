@@ -34,7 +34,7 @@ router.post('/login', async (req, res) => {
   const password = req.body?.password;
   if (!email || typeof password !== 'string') fail(400, 'Email and password are required');
   const user = await User.findOne({ email }).select('+passwordHash');
-  if (!user || !(await bcrypt.compare(password, user.passwordHash))) fail(401, 'Invalid email or password');
+  if (!user || user.active === false || !(await bcrypt.compare(password, user.passwordHash))) fail(401, 'Invalid email or password');
   res.json({ message: 'Login successful', token: issueToken(user), user: publicUser(user) });
 });
 

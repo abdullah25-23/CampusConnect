@@ -4,12 +4,14 @@ import { ArrowRight, CheckCheck, CirclePlus, Clock3, ClipboardList, Hourglass, T
 import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../lib/api.js';
-import { STATUSES, dateLabel, categoryName } from '../lib/config.js';
+import { STATUSES, dateLabel } from '../lib/config.js';
+import { useCatalog } from '../context/CatalogContext.jsx';
 import { ErrorBanner, Loading, PageHeader, StatCard, EmptyState } from '../components/Ui.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { categoryName } = useCatalog();
   const [stats, setStats] = useState(null);
   const [error, setError] = useState('');
   const isStudent = user.role === 'student';

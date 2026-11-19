@@ -1,19 +1,22 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { BarChart3, Bell, ChevronRight, CirclePlus, LayoutDashboard, ListChecks, LogOut, Menu, ShieldCheck, X } from 'lucide-react';
+import { BarChart3, Settings2, ChevronRight, CirclePlus, LayoutDashboard, ListChecks, LogOut, Menu, ShieldCheck, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
-import { departmentName, roleName } from '../lib/config.js';
+import { roleName } from '../lib/config.js';
+import { useCatalog } from '../context/CatalogContext.jsx';
 import Brand from './Brand.jsx';
 
 export default function AppShell() {
   const [open, setOpen] = useState(false);
   const { user, signOut } = useAuth();
+  const { departmentName } = useCatalog();
   const navigate = useNavigate();
   const isStudent = user?.role === 'student';
   const items = [
     { to: '/dashboard', title: 'Overview', icon: LayoutDashboard },
     { to: '/complaints', title: isStudent ? 'My complaints' : 'Manage complaints', icon: ListChecks },
     ...(isStudent ? [{ to: '/complaints/new', title: 'New complaint', icon: CirclePlus }] : [{ to: '/analytics', title: 'Analytics', icon: BarChart3 }]),
+    ...(user?.role === 'super_admin' ? [{ to: '/admin/manage', title: 'Campus management', icon: Settings2 }] : []),
   ];
 
   function logout() { signOut(); navigate('/login', { replace: true }); }

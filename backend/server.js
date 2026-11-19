@@ -37,6 +37,7 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/meta', require('./routes/metaRoutes'));
 app.use('/api/complaints', require('./routes/complaintRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
 
 app.use((req, res) => res.status(404).json({ message: 'Endpoint not found' }));
 app.use((error, req, res, next) => {
@@ -55,6 +56,7 @@ async function start() {
       throw new Error('JWT_SECRET is missing or too short (minimum 32 characters)');
     }
     await connectDB();
+    await require('./services/catalogService').ensureDefaultCatalog();
     app.listen(PORT, '0.0.0.0', () => console.log(`API listening on port ${PORT}`));
   } catch (error) {
     console.error('Startup failed:', error.message);
